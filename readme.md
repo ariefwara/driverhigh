@@ -1,7 +1,3 @@
-Here’s the **README** for the **DriverHigh** project:
-
----
-
 # DriverHigh  
 
 **DriverHigh** is a high-performance web framework designed to build APIs that run as fast as possible. Built on the **Drive Framework**, it enforces parallelization of all independent processes, ensuring maximum efficiency and scalability.  
