@@ -1,0 +1,40 @@
+# Ignore class files
+*.class
+
+# Ignore package files
+*.jar
+*.war
+*.ear
+
+# Ignore logs
+*.log
+
+# Ignore temporary files
+*.tmp
+*.bak
+*.swp
+
+# Ignore build directories
+/bin/
+/build/
+/target/
+
+# Ignore IDE specific files
+/.idea/
+/*.iml
+/.project
+/.classpath
+/.settings/
+
+# Ignore Maven specific files
+/.mvn/
+/.mvn/wrapper/maven-wrapper.jar
+
+# Ignore Gradle specific files
+/.gradle/
+/build/
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db
+# End Generation Here
