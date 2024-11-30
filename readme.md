@@ -1,27 +1,26 @@
 # DriverHigh  
 
-**DriverHigh** is a high-performance web framework designed to build APIs that run as fast as possible. Built on the **Drive Framework**, it enforces parallelization of all independent processes, ensuring maximum efficiency and scalability.  
+**DriverHigh** is a high-performance web framework for building APIs that leverage parallel task execution to optimize performance. Powered by the **Drift Framework**, it ensures efficient processing by enabling developers to handle independent tasks concurrently while maintaining clean and intuitive code.
 
 ---
 
 ## Features  
 
-- **Lightning-Fast API Execution**: Optimized for performance, forcing parallel execution wherever possible.  
-- **Drive Framework Integration**: Leverages the powerful task orchestration of Drive Framework for seamless parallel processing.  
-- **Developer-Friendly**: Guides developers to identify and parallelize tasks for maximum efficiency.  
-- **Scalable Design**: Built for modern systems demanding high throughput and low latency.  
-- **Dynamic Workflow Management**: Automatically identifies independent tasks and runs them concurrently.  
+- **Parallel Task Execution**: Execute unrelated tasks simultaneously for maximum efficiency.  
+- **Seamless Integration with Drift**: Leverages the powerful Drift framework for task orchestration.  
+- **Request Handling**: Easily manage HTTP parameters and headers using the `Request` object.  
+- **Intuitive API**: A clean and developer-friendly syntax for building scalable systems.  
 
 ---
 
 ## Installation  
 
-To integrate **DriverHigh** into your project, add the following dependency to your `pom.xml`:  
+Add the following dependency to your `pom.xml`:
 
 ```xml
 <dependency>
     <groupId>id.levalapp.driverhigh</groupId>
-    <artifactId>driverhigh</artifactId>
+    <artifactId>driverhigh-framework</artifactId>
     <version>1.0.0</version>
 </dependency>
 ```
@@ -36,30 +35,55 @@ mvn clean install
 
 ## Usage  
 
-### Basic API Example  
-
-Here’s how you can use **DriverHigh** to build an API:
+### Example: Parallel API Workflow
 
 ```java
-import id.levalapp.driverhigh.DriverHigh;
+package id.levalapp.driverhigh;
+
+import id.levalapp.drift.Drift;
 
 public class Example {
     public static void main(String[] args) {
-        String result = new DriverHigh()
-            .shift(() -> {
-                System.out.println("Task 1: Independent process 1");
-                return "Result 1";
-            })
-            .shift(() -> {
-                System.out.println("Task 2: Independent process 2");
-                return "Result 2";
-            })
-            .swift((result1, result2) -> {
-                System.out.println("Combining results: " + result1 + " and " + result2);
-                return "Final Output: " + result1 + ", " + result2;
-            });
+        DriverHigh engine = new DriverHigh(8080);
 
-        System.out.println("Final Result: " + result);
+        engine.get("parallel/example", (drift) -> {
+            return new Response(200, drift
+                .shift(
+                    () -> {
+                        String userId = drift.getRequest().getParam("userId");
+                        System.out.println("Task 1: Fetching user details for userId: " + userId);
+                        simulateDelay(1000);
+                        return "User Details for " + userId;
+                    },
+                    () -> {
+                        String userId = drift.getRequest().getParam("userId");
+                        System.out.println("Task 2: Fetching account details for userId: " + userId);
+                        simulateDelay(1000);
+                        return "Account Balance: 5000";
+                    },
+                    () -> {
+                        String userId = drift.getRequest().getParam("userId");
+                        System.out.println("Task 3: Fetching recommendations for userId: " + userId);
+                        simulateDelay(1000);
+                        return "Recommendations: Buy more tech books";
+                    }
+                )
+                .swift((userDetails, accountDetails, recommendations) -> {
+                    System.out.println("Combining results");
+                    return "Response: " + userDetails + ", " + accountDetails + ", " + recommendations;
+                })
+            );
+        });
+
+        engine.ignite();
+    }
+
+    private static void simulateDelay(int ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
 ```
@@ -68,36 +92,46 @@ public class Example {
 
 ## Workflow  
 
-1. **Initialization**:
-   - Start with a new `DriverHigh` instance.
+1. **Engine Initialization**:
+   - Create a new `DriverHigh` instance with the desired port number.
 
-2. **Shifting Independent Processes**:
-   - Use `shift` to define all independent tasks.
-   - Tasks execute in parallel whenever possible.
+2. **Endpoint Definition**:
+   - Use HTTP method handlers (e.g., `get`) to define routes and attach workflows.
 
-3. **Swift Finalization**:
-   - Use `swift` to combine and process results from all parallel tasks.
+3. **Drift Workflow**:
+   - Use `shift` to define parallel tasks for unrelated processes.
+   - Use `swift` to combine results and produce the final response.
+
+4. **Server Start**:
+   - Call `ignite` to start the server.
 
 ---
 
 ## Output  
 
-For the above example, the output will be:
+For the above example, when hitting **GET /parallel/example?userId=123**, the following is logged:
 
 ```
-Task 1: Independent process 1
-Task 2: Independent process 2
-Combining results: Result 1 and Result 2
-Final Result: Final Output: Result 1, Result 2
+Task 1: Fetching user details for userId: 123
+Task 2: Fetching account details for userId: 123
+Task 3: Fetching recommendations for userId: 123
+Combining results
+```
+
+And the client receives:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+Response: User Details for 123, Account Balance: 5000, Recommendations: Buy more tech books
 ```
 
 ---
 
 ## Why DriverHigh?  
 
-DriverHigh enforces parallel execution to achieve unmatched performance in API development. By identifying and isolating independent processes, it ensures no task blocks another, maximizing throughput and minimizing latency.  
-
-If you’re building APIs where speed is critical, **DriverHigh** is your ideal choice.
+DriverHigh provides a simple yet powerful approach to building high-performance APIs by focusing on parallelism. Its integration with the Drift framework ensures developers can easily handle complex workflows while optimizing performance and maintaining code clarity.
 
 ---
 
