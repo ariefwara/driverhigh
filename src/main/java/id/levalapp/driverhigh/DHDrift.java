@@ -4,7 +4,7 @@ import id.levalapp.drift.Drift;
 
 public class DHDrift extends Drift {
 
-    private final Request request;
+    private final DHRequest request;
 
     /**
      * Constructs a DHDrift instance with a Request and parameters.
@@ -12,7 +12,7 @@ public class DHDrift extends Drift {
      * @param request The Request object to associate with this Drift
      * @param params  The parameters for Drift's functionality
      */
-    public DHDrift(Request request, Object[] params) {
+    public DHDrift(DHRequest request, Object[] params) {
         super(params);
         this.request = request;
     }
@@ -22,7 +22,7 @@ public class DHDrift extends Drift {
      *
      * @return The Request object
      */
-    public Request getRequest() {
+    public DHRequest getRequest() {
         return request;
     }
 }

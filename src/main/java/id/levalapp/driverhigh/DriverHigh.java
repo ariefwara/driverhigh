@@ -1,13 +1,13 @@
 package id.levalapp.driverhigh;
 
-import id.levalapp.drift.Drift;
-import id.levalapp.driverhigh.DHDrift;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,68 +23,55 @@ public class DriverHigh {
         this.port = port;
     }
 
-    /**
-     * Registers a GET route with the specified path and handler.
-     *
-     * @param path    The endpoint path (e.g., "/example")
-     * @param handler The function to handle the request using DHDrift
-     */
     public void get(String path, Function<DHDrift, Object> handler) {
         getRoutes.put(path, handler);
     }
 
-    /**
-     * Starts the Jetty server and listens for incoming requests.
-     *
-     * @throws Exception if the server fails to start
-     */
-    public void ignite() throws Exception {
+    public void start() throws Exception {
         server = new Server(port);
-        server.setHandler(new AbstractHandler() {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                if ("GET".equalsIgnoreCase(request.getMethod())) {
-                    handleGetRequest(target, request, response);
-                    baseRequest.setHandled(true);
+        ServletHandler handler = new ServletHandler();
+        server.setHandler(handler);
+
+        getRoutes.forEach((path, func) -> {
+            handler.addServletWithMapping(new ServletHolder(new HttpServlet() {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                    handleGetRequest(req, resp, func);
                 }
-            }
+            }), path);
         });
+
         server.start();
         System.out.println("DriverHigh is running on port " + port);
         server.join();
     }
 
-    /**
-     * Handles a GET request by matching it to the registered route.
-     *
-     * @param target   The requested path
-     * @param request  The HttpServletRequest object
-     * @param response The HttpServletResponse object
-     */
-    private void handleGetRequest(String target, HttpServletRequest request, HttpServletResponse response) throws IOException {
-        Function<DHDrift, Object> handler = getRoutes.get(target);
-        if (handler != null) {
-            // Create a DHDrift object with a Request and raw params
-            Request dhRequest = new Request(new Object[]{request.getParameterMap(), extractHeaders(request)});
-            DHDrift dhDrift = new DHDrift(dhRequest, new Object[]{});
+    private void handleGetRequest(HttpServletRequest request, HttpServletResponse response,
+                                  Function<DHDrift, Object> handler) throws IOException {
+        Map<String, Object> queryParams = extractQueryParams(request);
+        Map<String, String> headers = extractHeaders(request);
 
-            // Execute the handler and generate a response
-            Object result = handler.apply(dhDrift);
-            response.setContentType("application/json; charset=utf-8");
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().println(result.toString());
-        } else {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            response.getWriter().println("404 Not Found");
-        }
+        DHRequest dhRequest = new DHRequest(queryParams, headers, null);
+        DHDrift dhDrift = new DHDrift(dhRequest, new Object[]{});
+
+        Object result = handler.apply(dhDrift);
+        response.setContentType("application/json; charset=utf-8");
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.getWriter().println(result.toString());
     }
 
-    /**
-     * Extracts headers from the HttpServletRequest into a Map.
-     *
-     * @param request The HttpServletRequest object
-     * @return A map of header names to their values
-     */
+    private Map<String, Object> extractQueryParams(HttpServletRequest request) {
+        Map<String, Object> queryParams = new HashMap<>();
+        request.getParameterMap().forEach((key, values) -> {
+            if (values.length == 1) {
+                queryParams.put(key, values[0]);
+            } else {
+                queryParams.put(key, values);
+            }
+        });
+        return queryParams;
+    }
+
     private Map<String, String> extractHeaders(HttpServletRequest request) {
         Map<String, String> headers = new HashMap<>();
         request.getHeaderNames().asIterator().forEachRemaining(headerName ->
@@ -92,11 +79,6 @@ public class DriverHigh {
         return headers;
     }
 
-    /**
-     * Stops the Jetty server.
-     *
-     * @throws Exception if the server fails to stop
-     */
     public void stop() throws Exception {
         if (server != null) {
             server.stop();
